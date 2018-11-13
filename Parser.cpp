@@ -5,15 +5,13 @@ Parser::Parser()
 {
     std::cout << "Initialising Parser...\n";
     buildOperandMeaningShort();
-    buildOperamingMeaningLong();
     buildOperandLetterRepresentation();
 };
 
 void Parser::ParseLine(StructuredInstruction si)
 {
     Operators opcode = static_cast<Operators>(si.operand);
-    string meaning = si.extended ? operandMeaningLong.find(opcode)->second : operandMeaningShort.find(opcode)->second;
-    meaning = replaceAddress(si.address, meaning);
+    string meaning = replaceAddress(si.address, operandMeaningShort.find(opcode)->second);
 
     // Print full binary string.
     cout << si.operand_binary << "  " << si.unused_bit_binary << "  " << si.address_binary << "  " << si.length_bit_binary;
@@ -25,47 +23,37 @@ void Parser::ParseLine(StructuredInstruction si)
         // Print S / L depending on whether the address field is extended.
         << getExtendedString(si.extended)
         // Print generic meaning for each statement, with arguments substituted in.
-        << "\t| Meaning: " << meaning
+        << "\t| " << meaning
         //<< replaceAddress(s)
         << endl;
 }
 
 void Parser::buildOperandMeaningShort()
 {
-    operandMeaningShort[Operators::A] = "A += m[$1]";
-    operandMeaningShort[Operators::S] = "A -= m[$1]";
-    operandMeaningShort[Operators::H] = "R += m[$1]";
-    operandMeaningShort[Operators::V] = "AB += m[$1] * R";
-    operandMeaningShort[Operators::N] = "AB -= m[$1] * R";
-    operandMeaningShort[Operators::T] = "m[$1] = A; ABC = 0";
-    operandMeaningShort[Operators::U] = "m[$1] = A";
-    operandMeaningShort[Operators::C] = "AB += m[$1] & R";
-    operandMeaningShort[Operators::R] = "ABC << <position of least significant bit>";                      // TODO - Ask about this
-    operandMeaningShort[Operators::L] = "ABC >> <position of least significant one in shift instruction>"; // See above
-    operandMeaningShort[Operators::E] = "if A >= 0 goto $1";
-    operandMeaningShort[Operators::G] = "if A < 0 goto $1";
-    operandMeaningShort[Operators::I] = "Place the next paper tape character in the least significant 5 bits of N.";
-    operandMeaningShort[Operators::O] = "wr(m[$1])";
-    operandMeaningShort[Operators::F] = "<verify last character output>";
+    operandMeaningShort[Operators::A] = "Add the number in storage location $1 into the accumulator";
+    operandMeaningShort[Operators::S] = "Subtract the number in storage location $1 from the accumulator";
+    operandMeaningShort[Operators::H] = "Copy the number in storage location $1 into the multiplier register";
+    operandMeaningShort[Operators::V] = "Multiply the number in storage location $1 by the number in the multiplier register and add the product into the accumulator";
+    operandMeaningShort[Operators::N] = "Multiply the number in storage location $1 by the number in the multiplier register and subtract the product from the accumulator";
+    operandMeaningShort[Operators::T] = "Transfer the contents of the accumulator to storage location $1 and clear the accumulator";
+    operandMeaningShort[Operators::U] = "Transfer the contents of the accumulator to storage location $1 and do not clear the accumulator";
+    operandMeaningShort[Operators::C] = "Collate [logical and] the number in storage location $1 with the number in the multiplier register and add the result into the accumulator";
+    operandMeaningShort[Operators::R] = "Shift the number in the accumulator $1 places to the right";                      
+    operandMeaningShort[Operators::L] = "Shift the number in the accumulator n places to the left";
+    operandMeaningShort[Operators::E] = "If the sign of the accumulator is positive, jump to location $1; otherwise proceed serially";
+    operandMeaningShort[Operators::G] = "If the sign of the accumulator is negative, jump to location $1; otherwise proceed serially";
+    operandMeaningShort[Operators::I] = "Read the next character from paper tape, and store it as the least significant 5 bits of location $1";
+    operandMeaningShort[Operators::O] = "Print the character represented by the most significant 5 bits of storage location $1";
+    operandMeaningShort[Operators::F] = "Read the last character output for verification";
     operandMeaningShort[Operators::X] = "No operation";
-    operandMeaningShort[Operators::Y] = "Add one to bit position 35 of ABC";
+    operandMeaningShort[Operators::Y] = "Round the number in the accumulator to 34 bits";
+    operandMeaningShort[Operators::K] = "// TODO?";
     operandMeaningShort[Operators::Z] = "stop";
     operandMeaningShort[Operators::HASH] = "data 11<<12";        // ???? - TODO
     operandMeaningShort[Operators::EXCLAMATION] = "data 20<<12"; // ??? Space character? TODO
     operandMeaningShort[Operators::AMPERSAND] = "data 24<<12";   // line feed
     operandMeaningShort[Operators::AT] = "data 18<<12";          // CR s
-};
-
-void Parser::buildOperamingMeaningLong()
-{
-    operandMeaningLong[Operators::A] = "AB += m[$1]";
-    operandMeaningLong[Operators::S] = "AB -= m[$1]";
-    operandMeaningLong[Operators::H] = "RS += m[$1]";
-    operandMeaningLong[Operators::V] = "ABC += m[$1] * R";
-    operandMeaningLong[Operators::N] = "ABC -= m[$1] * R";
-    operandMeaningLong[Operators::T] = "m[$1] = AB; ABC = 0";
-    operandMeaningLong[Operators::U] = "m[$1] = AB";
-    operandMeaningLong[Operators::C] = "ABC += m[$1] & RS";
+    operandMeaningShort[Operators::P] = "data $1 - Meaning?";
 };
 
 void Parser::buildOperandLetterRepresentation()
@@ -88,10 +76,12 @@ operandLetterRepresentation[Operators::F] = 'F';
 operandLetterRepresentation[Operators::X] = 'X';
 operandLetterRepresentation[Operators::Y] = 'Y';
 operandLetterRepresentation[Operators::Z] = 'Z';
+operandLetterRepresentation[Operators::K] = 'K';
 operandLetterRepresentation[Operators::HASH] = '#';
 operandLetterRepresentation[Operators::EXCLAMATION] = '!';
 operandLetterRepresentation[Operators::AMPERSAND] = '&';
 operandLetterRepresentation[Operators::AT] = '@';
+operandLetterRepresentation[Operators::P] = 'P';
 };
 
 string Parser::getExtendedString(int i){

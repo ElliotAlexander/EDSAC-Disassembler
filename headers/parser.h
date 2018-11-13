@@ -10,7 +10,6 @@ class Parser
 {
     public:
         std::map<Operators,std::string> operandMeaningShort;
-        std::map<Operators,std::string> operandMeaningLong;
         std::map<int,std::string> operandLetterRepresentation;
 
 
